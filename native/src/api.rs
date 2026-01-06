@@ -1,4 +1,4 @@
-use crate::state::{APP_STATE, RomState};
+use crate::state::{RomState, APP_STATE};
 use crate::structures::RomHeader;
 use anyhow::{Context, Result};
 use binrw::BinRead;
@@ -15,15 +15,19 @@ pub fn load_rom(path: String) -> Result<String> {
     let header = RomHeader::read(&mut reader).context("Failed to parse ROM Header")?;
 
     // 3. Validation (Basic check)
-    if header.game_code != "BPRE" && header.game_code != "BPEE" {
-        return Err(anyhow::anyhow!("Unsupported Game Code: {}. Only BPRE (FireRed) and BPEE (Emerald) are supported.", header.game_code));
-    }
-    
+    // 3. Validation (Relaxed)
+    // We no longer error on unknown codes, just log or proceed.
+    // if header.game_code != "BPRE" && header.game_code != "BPEE" {
+    //    println!("Warning: Unknown Game Code: {}", header.game_code);
+    // }
+
     let game_title = header.game_title.clone();
 
     // 4. Update Global State
     {
-        let mut state = APP_STATE.write().map_err(|_| anyhow::anyhow!("Failed to acquire write lock"))?;
+        let mut state = APP_STATE
+            .write()
+            .map_err(|_| anyhow::anyhow!("Failed to acquire write lock"))?;
         *state = Some(RomState::new(data, header));
     }
 
@@ -31,9 +35,14 @@ pub fn load_rom(path: String) -> Result<String> {
 }
 
 pub fn get_rom_header_info() -> Result<String> {
-    let state = APP_STATE.read().map_err(|_| anyhow::anyhow!("Failed to acquire read lock"))?;
+    let state = APP_STATE
+        .read()
+        .map_err(|_| anyhow::anyhow!("Failed to acquire read lock"))?;
     match &*state {
-        Some(s) => Ok(format!("Code: {}, Title: {}", s.header.game_code, s.header.game_title)),
+        Some(s) => Ok(format!(
+            "Code: {}, Title: {}",
+            s.header.game_code, s.header.game_title
+        )),
         None => Err(anyhow::anyhow!("No ROM loaded")),
     }
 }
@@ -47,14 +56,18 @@ fn resolve_pointer(ptr: u32) -> Result<usize> {
     Ok((ptr & 0x01FFFFFF) as usize)
 }
 
-use crate::structures::{MapHeader, MapLayout, TilesetHeader};
 use crate::compression::decompress_lz77;
 use crate::graphics::decode_4bpp_tile;
 use crate::scripting::{disassemble, ScriptCommand};
+use crate::structures::{MapHeader, MapLayout, TilesetHeader};
 
 pub fn disassemble_script(offset: u32) -> Result<Vec<ScriptCommand>> {
-    let state_guard = APP_STATE.read().map_err(|_| anyhow::anyhow!("Failed to lock"))?;
-    let state = state_guard.as_ref().ok_or(anyhow::anyhow!("No ROM loaded"))?;
+    let state_guard = APP_STATE
+        .read()
+        .map_err(|_| anyhow::anyhow!("Failed to lock"))?;
+    let state = state_guard
+        .as_ref()
+        .ok_or(anyhow::anyhow!("No ROM loaded"))?;
 
     let real_offset = resolve_pointer(offset)?;
     if real_offset >= state.data.len() {
@@ -65,9 +78,13 @@ pub fn disassemble_script(offset: u32) -> Result<Vec<ScriptCommand>> {
 }
 
 pub fn render_map_preview(map_header_ptr: u32) -> Result<Vec<u8>> {
-    let state_guard = APP_STATE.read().map_err(|_| anyhow::anyhow!("Failed to lock"))?;
-    let state = state_guard.as_ref().ok_or(anyhow::anyhow!("No ROM loaded"))?;
-    
+    let state_guard = APP_STATE
+        .read()
+        .map_err(|_| anyhow::anyhow!("Failed to lock"))?;
+    let state = state_guard
+        .as_ref()
+        .ok_or(anyhow::anyhow!("No ROM loaded"))?;
+
     // 1. Read Map Header
     let map_header_offset = resolve_pointer(map_header_ptr)?;
     let mut reader = Cursor::new(&state.data);
@@ -102,7 +119,7 @@ pub fn render_map_preview(map_header_ptr: u32) -> Result<Vec<u8>> {
 
     // 5. Read Graphics
     let gfx_offset = resolve_pointer(tileset.graphics_ptr)?;
-    
+
     let raw_gfx = if tileset.is_compressed == 1 {
         // Read from ROM at offset
         // We need to slice from gfx_offset to end?
@@ -115,9 +132,9 @@ pub fn render_map_preview(map_header_ptr: u32) -> Result<Vec<u8>> {
         // Usually 4bpp tiles. Let's read 128 tiles (128 * 32 bytes = 4KB)
         let size = 128 * 32;
         if gfx_offset + size > state.data.len() {
-             anyhow::bail!("Graphics ptr out of bounds for uncompressed read");
+            anyhow::bail!("Graphics ptr out of bounds for uncompressed read");
         }
-        state.data[gfx_offset..gfx_offset+size].to_vec()
+        state.data[gfx_offset..gfx_offset + size].to_vec()
     };
 
     // 6. Decode first 128 tiles into a grid (16 tiles wide, 8 high)
@@ -128,14 +145,16 @@ pub fn render_map_preview(map_header_ptr: u32) -> Result<Vec<u8>> {
     let mut output_img = image::RgbaImage::new(tiles_wide * 8, tiles_high * 8);
 
     for i in 0..(tiles_wide * tiles_high) {
-        if i * 32 >= raw_gfx.len() as u32 { break; }
-        
+        if i * 32 >= raw_gfx.len() as u32 {
+            break;
+        }
+
         let tile_data = &raw_gfx[(i as usize * 32)..((i as usize + 1) * 32)];
         let tile_img = decode_4bpp_tile(tile_data, &palette);
-        
+
         let x_pos = (i % tiles_wide) * 8;
         let y_pos = (i / tiles_wide) * 8;
-        
+
         // Copy pixels
         for ty in 0..8 {
             for tx in 0..8 {
@@ -161,8 +180,12 @@ fn calculate_header_checksum(data: &[u8]) -> u8 {
 
 /// Saves the current ROM state to a new file.
 pub fn save_rom(output_path: String) -> Result<String> {
-    let state_guard = APP_STATE.read().map_err(|_| anyhow::anyhow!("Failed to lock"))?;
-    let state = state_guard.as_ref().ok_or(anyhow::anyhow!("No ROM loaded"))?;
+    let state_guard = APP_STATE
+        .read()
+        .map_err(|_| anyhow::anyhow!("Failed to lock"))?;
+    let state = state_guard
+        .as_ref()
+        .ok_or(anyhow::anyhow!("No ROM loaded"))?;
 
     // Clone data to modify it
     let mut new_data = state.data.clone();
@@ -172,8 +195,8 @@ pub fn save_rom(output_path: String) -> Result<String> {
         let start = *offset as usize;
         let end = start + bytes.len();
         if end > new_data.len() {
-             // Handle expansion
-             new_data.resize(end, 0xFF);
+            // Handle expansion
+            new_data.resize(end, 0xFF);
         }
         new_data[start..end].copy_from_slice(bytes);
     }
@@ -190,11 +213,15 @@ pub fn save_rom(output_path: String) -> Result<String> {
 }
 
 pub fn apply_patch(offset: u32, data: Vec<u8>) -> Result<()> {
-     let mut state_guard = APP_STATE.write().map_err(|_| anyhow::anyhow!("Failed to lock"))?;
-     let state = state_guard.as_mut().ok_or(anyhow::anyhow!("No ROM loaded"))?;
+    let mut state_guard = APP_STATE
+        .write()
+        .map_err(|_| anyhow::anyhow!("Failed to lock"))?;
+    let state = state_guard
+        .as_mut()
+        .ok_or(anyhow::anyhow!("No ROM loaded"))?;
 
-     // In a real scenario, we might want to check if data fits or needs repointing.
-     // For now, we update the modification map.
-     state.modifications.insert(offset, data);
-     Ok(())
+    // In a real scenario, we might want to check if data fits or needs repointing.
+    // For now, we update the modification map.
+    state.modifications.insert(offset, data);
+    Ok(())
 }

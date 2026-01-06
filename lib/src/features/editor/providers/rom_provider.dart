@@ -5,16 +5,29 @@ import 'package:gba_forge/src/rust/api.dart';
 class RomState {
   final String? filePath;
   final String? gameTitle;
+  final String? gameCode;
   final bool isLoading;
   final String? error;
 
-  RomState({this.filePath, this.gameTitle, this.isLoading = false, this.error});
+  RomState({
+    this.filePath,
+    this.gameTitle,
+    this.gameCode,
+    this.isLoading = false,
+    this.error,
+  });
 
-  RomState copyWith(
-      {String? filePath, String? gameTitle, bool? isLoading, String? error}) {
+  RomState copyWith({
+    String? filePath,
+    String? gameTitle,
+    String? gameCode,
+    bool? isLoading,
+    String? error,
+  }) {
     return RomState(
       filePath: filePath ?? this.filePath,
       gameTitle: gameTitle ?? this.gameTitle,
+      gameCode: gameCode ?? this.gameCode,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
     );
@@ -27,9 +40,31 @@ class RomNotifier extends StateNotifier<RomState> {
   Future<void> loadRomFile(String path) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
+      // 1. Load Rom
       final title = await loadRom(path: path);
-      state =
-          state.copyWith(filePath: path, gameTitle: title, isLoading: false);
+
+      // 2. Fetch Header Info to get Code
+      String code = "UNKNOWN";
+      try {
+        final info = await getRomHeaderInfo();
+        // Format is "Code: XXXX, Title: YYYY"
+        final parts = info.split(',');
+        if (parts.isNotEmpty) {
+          final codePart = parts[0].trim(); // "Code: XXXX"
+          if (codePart.startsWith("Code: ")) {
+            code = codePart.substring(6);
+          }
+        }
+      } catch (e) {
+        print("Failed to fetch header info: $e");
+      }
+
+      state = state.copyWith(
+        filePath: path,
+        gameTitle: title,
+        gameCode: code,
+        isLoading: false,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
