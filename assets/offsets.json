@@ -1,0 +1,17 @@
+{
+    "BPRE": {
+        "name": "Pokemon FireRed (US)",
+        "map_header_ptr": "0x08354C28",
+        "script_bank_ptr": "0x08069354"
+    },
+    "BPEE": {
+        "name": "Pokemon Emerald (US)",
+        "map_header_ptr": null,
+        "script_bank_ptr": "0x0815FC48"
+    },
+    "BPRJ": {
+        "name": "Pokemon FireRed (JP)",
+        "map_header_ptr": null,
+        "script_bank_ptr": "0x0806733C"
+    }
+}
