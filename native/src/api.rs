@@ -164,7 +164,14 @@ pub fn render_map_preview(map_header_ptr: u32) -> Result<Vec<u8>> {
         }
     }
 
-    Ok(output_img.into_raw())
+    // Enhance: Encode as PNG so Flutter Image.memory can read it
+    let mut png_data = Vec::new();
+    let mut cursor = Cursor::new(&mut png_data);
+    image::DynamicImage::ImageRgba8(output_img)
+        .write_to(&mut cursor, image::ImageOutputFormat::Png)
+        .context("Failed to encode map preview as PNG")?;
+
+    Ok(png_data)
 }
 
 /// Updates the Header Checksum (byte at 0xBD)
