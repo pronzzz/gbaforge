@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gba_forge/main.dart';
-import 'package:gba_forge/src/features/editor/screens/home_screen.dart';
 
 // Helper to wrap widgets in ProviderScope
 Widget createWidgetUnderTest() {
