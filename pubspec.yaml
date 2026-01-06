@@ -1,0 +1,38 @@
+name: gba_forge
+description: A cross-platform no-code ROM hacking suite for GBA Pokemon games.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  
+  # Rust Bridge
+  flutter_rust_bridge: ^2.0.0-dev.32
+  
+  # UI/Visuals
+  infinite_canvas: ^1.0.0 # Placeholder, verifying availability or alternative
+  interactive_viewer_2: ^0.1.0 # Alternative if infinite_canvas is not suitable
+  flutter_flow_chart: ^0.1.0 # For Script Editor
+  
+  # Utilities
+  path_provider: ^2.1.1
+  file_picker: ^6.1.1
+  google_fonts: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  riverpod_generator: ^2.3.9
+  build_runner: ^2.4.8
+
+flutter:
+  uses-material-design: true
