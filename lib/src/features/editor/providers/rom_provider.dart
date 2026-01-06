@@ -34,6 +34,16 @@ class RomNotifier extends StateNotifier<RomState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
+
+  Future<void> saveRomFile(String path) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await saveRom(outputPath: path);
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
 }
 
 final romProvider = StateNotifierProvider<RomNotifier, RomState>((ref) {

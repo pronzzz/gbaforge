@@ -51,6 +51,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  Future<void> _saveFile() async {
+    final romState = ref.read(romProvider);
+    if (romState.filePath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No ROM loaded to save')),
+      );
+      return;
+    }
+
+    String? outputFile = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save ROM',
+      fileName: 'modified_rom.gba',
+    );
+
+    if (outputFile != null) {
+      await ref.read(romProvider.notifier).saveRomFile(outputFile);
+      if (mounted) {
+        final error = ref.read(romProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error == null
+                ? 'ROM saved successfully!'
+                : 'Save failed: $error'),
+            backgroundColor: error == null ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final romState = ref.watch(romProvider);
@@ -66,8 +96,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.save),
-            // Dummy save for now
-            onPressed: () {},
+            onPressed: _saveFile,
             tooltip: 'Save ROM',
           ),
         ],
@@ -93,56 +122,86 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const VerticalDivider(thickness: 1, width: 1),
           // Main Content
           Expanded(
-            child: _selectedIndex == 1
-                ? const ScriptEditorScreen()
-                : Center(
-                    child: romState.isLoading
-                        ? const CircularProgressIndicator()
-                        : romState.filePath == null
-                            ? const Text('Open a GBA ROM to start')
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Loaded: ${romState.gameTitle ?? "Unknown Title"}',
-                                    style:
-                                        Theme.of(context).textTheme.titleLarge,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  if (romState.error != null)
-                                    Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Text(
-                                        'Error: ${romState.error}',
-                                        style:
-                                            const TextStyle(color: Colors.red),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  const SizedBox(height: 20),
-                                  _rendering
-                                      ? const CircularProgressIndicator()
-                                      : _mapPreview != null
-                                          ? SizedBox(
-                                              width: 512,
-                                              height: 256,
-                                              child: Image.memory(
-                                                _mapPreview!,
-                                                gaplessPlayback: true,
-                                                fit: BoxFit.contain,
-                                              ),
-                                            )
-                                          : ElevatedButton(
-                                              onPressed: _renderPreview,
-                                              child: const Text(
-                                                  'Render Map Preview'),
-                                            ),
-                                ],
-                              ),
-                  ),
+            child: romState.filePath == null
+                ? Center(
+                    child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('Open a GBA ROM to start'),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.file_open),
+                        label: const Text('Open ROM'),
+                        onPressed: _pickFile,
+                      ),
+                    ],
+                  ))
+                : _buildContent(romState),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildContent(RomState romState) {
+    if (romState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (romState.error != null && _selectedIndex != 0) {
+      // If there's an error, forcing back to main tab might be better,
+      // but showing error here is fine too.
+      return Center(
+          child: Text('Error: ${romState.error}',
+              style: const TextStyle(color: Colors.red)));
+    }
+
+    switch (_selectedIndex) {
+      case 0: // Map
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Loaded: ${romState.gameTitle ?? "Unknown Title"}',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 20),
+              if (romState.error != null)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'Error: ${romState.error}',
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              const SizedBox(height: 20),
+              _rendering
+                  ? const CircularProgressIndicator()
+                  : _mapPreview != null
+                      ? SizedBox(
+                          width: 512,
+                          height: 256,
+                          child: Image.memory(
+                            _mapPreview!,
+                            gaplessPlayback: true,
+                            fit: BoxFit.contain,
+                          ),
+                        )
+                      : ElevatedButton(
+                          onPressed: _renderPreview,
+                          child: const Text('Render Map Preview'),
+                        ),
+            ],
+          ),
+        );
+      case 1: // Script
+        return const ScriptEditorScreen();
+      case 2: // Sprites
+        return const Center(child: Text("Sprite Editor - Coming Soon"));
+      default:
+        return const SizedBox.shrink();
+    }
   }
 }
