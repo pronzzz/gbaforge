@@ -25,10 +25,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       String? path = result.files.single.path;
       if (path != null) {
         await ref.read(romProvider.notifier).loadRomFile(path);
-        // Auto-render map 3.0 (Pallet Town) for testing
-        // FireRed Map Bank 3, Map 0 is usually Pallet Town.
-        // We need the Header Pointer. For now, let's just trigger a dummy render if loaded.
-        _renderPreview();
+
+        // Only attempt to render if the load was successful
+        if (ref.read(romProvider).error == null) {
+          _renderPreview();
+        }
       }
     }
   }
@@ -102,14 +103,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             : Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text('Loaded: ${romState.gameTitle}'),
+                                  Text(
+                                    'Loaded: ${romState.gameTitle ?? "Unknown Title"}',
+                                    style:
+                                        Theme.of(context).textTheme.titleLarge,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  if (romState.error != null)
+                                    Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Text(
+                                        'Error: ${romState.error}',
+                                        style:
+                                            const TextStyle(color: Colors.red),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
                                   const SizedBox(height: 20),
                                   _rendering
                                       ? const CircularProgressIndicator()
                                       : _mapPreview != null
-                                          // 128x64 is the size we returned in mock/backend
                                           ? SizedBox(
-                                              width: 512, // scaled up
+                                              width: 512,
                                               height: 256,
                                               child: Image.memory(
                                                 _mapPreview!,
