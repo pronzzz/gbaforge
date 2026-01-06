@@ -129,6 +129,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       const Text('Open a GBA ROM to start'),
                       const SizedBox(height: 20),
+                      if (romState.error != null)
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            'Error: ${romState.error}',
+                            style: const TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ElevatedButton.icon(
                         icon: const Icon(Icons.file_open),
                         label: const Text('Open ROM'),
