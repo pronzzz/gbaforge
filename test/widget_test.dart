@@ -19,7 +19,7 @@ void main() {
 
     // Verify initial "Open ROM" message
     expect(find.text('Open a GBA ROM to start'), findsOneWidget);
-    
+
     // Verify that buttons exist
     expect(find.byIcon(Icons.file_open), findsOneWidget);
     expect(find.byIcon(Icons.save), findsOneWidget);

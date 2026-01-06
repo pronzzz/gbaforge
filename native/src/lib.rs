@@ -1,13 +1,16 @@
-pub mod structures;
-pub mod state;
+mod frb_generated; /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */
+
 pub mod api;
 pub mod compression;
 pub mod graphics;
-pub mod space_manager;
 pub mod scripting;
+pub mod space_manager;
+pub mod state;
+pub mod structures;
 
 use flutter_rust_bridge::frb;
 
+#[allow(unexpected_cfgs)]
 #[frb(init)]
 pub fn init_app() {
     // Default utilities - e.g. logging

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../rust/api/api.dart';
+import 'package:gba_forge/src/rust/api.dart';
+import 'package:gba_forge/src/rust/scripting.dart';
 
 class ScriptEditorScreen extends StatefulWidget {
   const ScriptEditorScreen({super.key});
@@ -26,12 +27,12 @@ class _ScriptEditorScreenState extends State<ScriptEditorScreen> {
   @override
   Widget build(BuildContext context) {
     if (_script == null && !_loading) {
-       return Center(
-         child: ElevatedButton(
-           onPressed: _loadScript, 
-           child: const Text("Disassemble Script at 0x800000"),
-         ),
-       );
+      return Center(
+        child: ElevatedButton(
+          onPressed: _loadScript,
+          child: const Text("Disassemble Script at 0x800000"),
+        ),
+      );
     }
 
     if (_loading) {
@@ -51,9 +52,10 @@ class _ScriptEditorScreenState extends State<ScriptEditorScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Node ${index + 1}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text("Node ${index + 1}",
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 const Divider(),
-                if (cmd is ScriptCommand_Message) 
+                if (cmd is ScriptCommand_Message)
                   Text("Message Box\nPtr: 0x${cmd.textPtr.toRadixString(16)}"),
                 if (cmd is ScriptCommand_TrainerBattle)
                   Text("Trainer Battle\nID: ${cmd.trainerId}"),

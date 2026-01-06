@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../rust/api/api.dart';
+import 'package:gba_forge/src/rust/api.dart';
 
 // State to hold the currently loaded ROM info
 class RomState {
@@ -10,7 +10,8 @@ class RomState {
 
   RomState({this.filePath, this.gameTitle, this.isLoading = false, this.error});
 
-  RomState copyWith({String? filePath, String? gameTitle, bool? isLoading, String? error}) {
+  RomState copyWith(
+      {String? filePath, String? gameTitle, bool? isLoading, String? error}) {
     return RomState(
       filePath: filePath ?? this.filePath,
       gameTitle: gameTitle ?? this.gameTitle,
@@ -27,7 +28,8 @@ class RomNotifier extends StateNotifier<RomState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final title = await loadRom(path: path);
-      state = state.copyWith(filePath: path, gameTitle: title, isLoading: false);
+      state =
+          state.copyWith(filePath: path, gameTitle: title, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }

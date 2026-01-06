@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'src/features/editor/screens/home_screen.dart';
+import 'package:gba_forge/src/features/editor/screens/home_screen.dart';
+import 'package:gba_forge/src/rust/frb_generated.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await RustLib.init();
   runApp(const ProviderScope(child: GbaForgeApp()));
 }
 

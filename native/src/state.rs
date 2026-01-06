@@ -1,7 +1,7 @@
-use crate::structures::{RomHeader, MapHeader};
+use crate::structures::RomHeader;
+use once_cell::sync::Lazy;
 use std::collections::BTreeMap;
 use std::sync::RwLock;
-use once_cell::sync::Lazy;
 
 // Global state required for FFI - accessed via RwLock for thread safety
 pub static APP_STATE: Lazy<RwLock<Option<RomState>>> = Lazy::new(|| RwLock::new(None));
