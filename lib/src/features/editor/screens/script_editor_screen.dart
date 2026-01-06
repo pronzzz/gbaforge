@@ -19,8 +19,19 @@ class _ScriptEditorScreenState extends State<ScriptEditorScreen> {
       // Mock offset for testing
       final script = await disassembleScript(offset: 0x800000);
       setState(() => _script = script);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load script: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
